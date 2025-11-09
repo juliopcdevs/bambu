@@ -43,11 +43,29 @@ fi
 # Calculate Vite port (APP_PORT + 1000)
 VITE_PORT=$((APP_PORT + 1000))
 
+# Request MongoDB port
+echo ""
+read -p "Enter MongoDB port (default 27017): " DB_PORT
+DB_PORT=${DB_PORT:-27017}
+
+# Validate port is a number
+if ! [[ "$DB_PORT" =~ ^[0-9]+$ ]]; then
+    echo "Error: Port must be a number"
+    exit 1
+fi
+
+# Validate port range
+if [ "$DB_PORT" -lt 1024 ] || [ "$DB_PORT" -gt 65535 ]; then
+    echo "Error: Port must be between 1024 and 65535"
+    exit 1
+fi
+
 echo ""
 echo "Configuring project: $PROJECT_NAME"
 echo "Technical name: $PROJECT_SNAKE"
 echo "Application port: $APP_PORT"
 echo "Vite port: $VITE_PORT"
+echo "MongoDB port: $DB_PORT"
 echo ""
 
 # 1. Update .env
@@ -67,9 +85,16 @@ if [ -f .env ]; then
         echo "# Docker" >> .env
         echo "APP_PORT=$APP_PORT" >> .env
         echo "VITE_PORT=$VITE_PORT" >> .env
+        echo "DB_PORT=$DB_PORT" >> .env
     else
         sed -i "s/APP_PORT=.*/APP_PORT=$APP_PORT/" .env
         sed -i "s/VITE_PORT=.*/VITE_PORT=$VITE_PORT/" .env
+        # Add DB_PORT if doesn't exist in Docker section
+        if ! grep -q "^DB_PORT=" .env; then
+            sed -i "/^VITE_PORT=/a DB_PORT=$DB_PORT" .env
+        else
+            sed -i "s/^DB_PORT=.*/DB_PORT=$DB_PORT/" .env
+        fi
     fi
 else
     echo "Error: .env file not found"
@@ -91,6 +116,7 @@ if [ -f .env.example ]; then
         echo "# Docker" >> .env.example
         echo "APP_PORT=8080" >> .env.example
         echo "VITE_PORT=5173" >> .env.example
+        echo "DB_PORT=27017" >> .env.example
     fi
 fi
 
@@ -123,6 +149,7 @@ echo "Technical name: $PROJECT_SNAKE"
 echo "Database: $PROJECT_SNAKE"
 echo "Application port: $APP_PORT"
 echo "Vite port: $VITE_PORT"
+echo "MongoDB port: $DB_PORT"
 echo "Containers: ${PROJECT_SNAKE}_app, ${PROJECT_SNAKE}_nginx, ${PROJECT_SNAKE}_mongodb, ${PROJECT_SNAKE}_vite"
 echo ""
 echo "Next steps:"

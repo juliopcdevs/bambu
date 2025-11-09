@@ -1,4 +1,4 @@
-.PHONY: help init up down restart shell logs install migrate seed fresh test build build-prod
+.PHONY: help init up down restart shell logs install migrate seed fresh test build build-prod verify
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -20,9 +20,11 @@ up: ## Start development environment
 	@if [ -f .env ]; then \
 		APP_PORT=$$(grep "^APP_PORT=" .env | cut -d'=' -f2); \
 		VITE_PORT=$$(grep "^VITE_PORT=" .env | cut -d'=' -f2); \
+		DB_PORT=$$(grep "^DB_PORT=" .env | cut -d'=' -f2); \
 		if [ -n "$$APP_PORT" ]; then \
 			echo "Application: http://localhost:$$APP_PORT"; \
 			echo "Vite HMR: http://localhost:$$VITE_PORT"; \
+			echo "MongoDB: mongodb://localhost:$${DB_PORT:-27017}"; \
 		else \
 			echo "Check your .env file for configured ports"; \
 		fi \
@@ -99,3 +101,6 @@ status: ## Show container status
 
 clean: ## Remove all containers, volumes and images
 	docker compose down -v --rmi all
+
+verify: ## Run automated verification tests
+	@bash verify-setup.sh

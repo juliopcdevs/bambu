@@ -42,7 +42,8 @@ make init
 
 This script will:
 - Ask for your project name
-- Ask for the port (default: 8080)
+- Ask for the application port (default: 8080)
+- Ask for the MongoDB port (default: 27017)
 - Update all configuration files
 - Configure Docker containers
 - Generate APP_KEY
@@ -80,6 +81,7 @@ To check your configured ports, run:
 ```bash
 grep APP_PORT .env
 grep VITE_PORT .env
+grep DB_PORT .env
 ```
 
 ## Available Commands
@@ -88,6 +90,7 @@ grep VITE_PORT .env
 make help              # Show all available commands
 make init              # Initialize project (run first!)
 make change-port       # Change application port
+make verify            # Run automated verification tests
 make up                # Start containers
 make down              # Stop containers
 make restart           # Restart containers
@@ -97,6 +100,28 @@ make migrate           # Run migrations
 make test              # Run backend tests
 make test-frontend     # Run frontend tests
 ```
+
+## Automated Verification
+
+To verify that the boilerplate is working correctly with proper port configuration:
+
+```bash
+make verify
+```
+
+This automated script will:
+1. Check currently running containers and ports in use
+2. Automatically select free ports for the application
+3. Initialize and start the project with those ports
+4. Run comprehensive tests:
+   - MongoDB connection and CRUD operations (insert, query, update, delete)
+   - Web server response and HTML rendering
+   - Vite HMR server functionality
+   - Port configuration verification
+5. Display a detailed test report
+6. **Automatically clean up**: Remove all containers, volumes, and restore original .env
+
+The script ensures that multiple projects can run simultaneously without port conflicts and leaves your system clean after verification.
 
 ## Managing Multiple Projects
 
@@ -111,27 +136,28 @@ make change-port
 ```
 
 This will:
-1. Show current port configuration
-2. Ask for the new port
-3. Stop running containers
-4. Update configuration files
-5. Ready to restart with new port
+1. Show current port configuration (app, vite, and MongoDB)
+2. Ask for the new application port
+3. Ask for the new MongoDB port
+4. Stop running containers
+5. Update configuration files
+6. Ready to restart with new ports
 
 Example workflow for running multiple projects:
 ```bash
-# Project 1 on port 8080
+# Project 1 on port 8080, MongoDB on 27017
 cd /path/to/project1
-make init  # Choose port 8080
+make init  # Choose port 8080, MongoDB port 27017
 make build && make up
 
-# Project 2 on port 8081
+# Project 2 on port 8081, MongoDB on 27018
 cd /path/to/project2
-make init  # Choose port 8081
+make init  # Choose port 8081, MongoDB port 27018
 make build && make up
 
-# Now both projects run simultaneously:
-# - Project 1: http://localhost:8080
-# - Project 2: http://localhost:8081
+# Now both projects run simultaneously without port conflicts:
+# - Project 1: http://localhost:8080 (MongoDB: 27017)
+# - Project 2: http://localhost:8081 (MongoDB: 27018)
 ```
 
 ## Project Structure
