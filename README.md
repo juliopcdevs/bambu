@@ -71,8 +71,16 @@ make migrate
 
 ### 5. Access the Application
 
-- **Application**: http://localhost:8080
-- **Vite HMR**: http://localhost:5173
+The application will be available at the port you configured during initialization:
+
+- **Application**: http://localhost:YOUR_PORT (default: 8080)
+- **Vite HMR**: http://localhost:YOUR_PORT+1000 (default: 5173)
+
+To check your configured ports, run:
+```bash
+grep APP_PORT .env
+grep VITE_PORT .env
+```
 
 ## Available Commands
 

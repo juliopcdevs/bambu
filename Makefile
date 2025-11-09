@@ -16,8 +16,17 @@ change-port: ## Change application port
 
 up: ## Start development environment
 	docker compose up -d
-	@echo "Application is running at http://localhost:8080"
-	@echo "Vite dev server at http://localhost:5173"
+	@echo "Containers started successfully!"
+	@if [ -f .env ]; then \
+		APP_PORT=$$(grep "^APP_PORT=" .env | cut -d'=' -f2); \
+		VITE_PORT=$$(grep "^VITE_PORT=" .env | cut -d'=' -f2); \
+		if [ -n "$$APP_PORT" ]; then \
+			echo "Application: http://localhost:$$APP_PORT"; \
+			echo "Vite HMR: http://localhost:$$VITE_PORT"; \
+		else \
+			echo "Check your .env file for configured ports"; \
+		fi \
+	fi
 
 down: ## Stop development environment
 	docker compose down
