@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PHP-FPM Application
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: bambu_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage:delegated
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - bambu_network
+    depends_on:
+      - mongodb
+    environment:
+      - DB_HOST=mongodb
+      - DB_PORT=27017
+      - DB_DATABASE=${DB_DATABASE:-bambu}
+
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: bambu_nginx
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - bambu_network
+    depends_on:
+      - app
+      - vite
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: bambu_mongodb
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_DATABASE: ${DB_DATABASE:-bambu}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - bambu_network
+
+  # Vite Development Server
+  vite:
+    image: node:20-alpine
+    container_name: bambu_vite
+    restart: unless-stopped
+    working_dir: /var/www
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    volumes:
+      - ./:/var/www
+      - /var/www/node_modules
+    networks:
+      - bambu_network
+    environment:
+      - VITE_DEV_SERVER_HOST=0.0.0.0
+      - VITE_DEV_SERVER_PORT=5173
+
+networks:
+  bambu_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

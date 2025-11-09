@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./resources/js/*"],
+      "@components/*": ["./resources/js/components/*"],
+      "@layouts/*": ["./resources/js/layouts/*"],
+      "@pages/*": ["./resources/js/pages/*"],
+      "@stores/*": ["./resources/js/stores/*"],
+      "@types/*": ["./resources/js/types/*"],
+      "@utils/*": ["./resources/js/utils/*"],
+      "@composables/*": ["./resources/js/composables/*"]
+    },
+
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "types": ["vite/client"]
+  },
+  "include": ["resources/js/**/*.ts", "resources/js/**/*.vue", "resources/js/**/*.d.ts"],
+  "exclude": ["node_modules", "vendor"]
+}
