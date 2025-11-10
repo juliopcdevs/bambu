@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name', 'Laravel') }}</title>
+    <link rel="icon" type="image/png" href="/favicon-panda.png">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
 </head>
 <body class="antialiased">
