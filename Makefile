@@ -16,19 +16,29 @@ change-port: ## Change application port
 
 up: ## Start development environment
 	docker compose up -d
-	@echo "Containers started successfully!"
+	@echo ""
+	@echo "=========================================="
+	@echo "  ✅ Containers started successfully!"
+	@echo "=========================================="
 	@if [ -f .env ]; then \
 		APP_PORT=$$(grep "^APP_PORT=" .env | cut -d'=' -f2); \
 		VITE_PORT=$$(grep "^VITE_PORT=" .env | cut -d'=' -f2); \
 		DB_PORT=$$(grep "^DB_PORT=" .env | cut -d'=' -f2); \
 		if [ -n "$$APP_PORT" ]; then \
-			echo "Application: http://localhost:$$APP_PORT"; \
-			echo "Vite HMR: http://localhost:$$VITE_PORT"; \
-			echo "MongoDB: mongodb://localhost:$${DB_PORT:-27017}"; \
+			echo ""; \
+			echo "Your application is available at:"; \
+			echo "  ⭐ http://localhost:$$APP_PORT ⭐"; \
+			echo ""; \
+			echo "Other services:"; \
+			echo "  • Vite HMR:  http://localhost:$$VITE_PORT"; \
+			echo "  • MongoDB:   mongodb://localhost:$${DB_PORT:-27017}"; \
+			echo ""; \
+			echo "⚠️  Make sure to use the correct port ($$APP_PORT)!"; \
 		else \
 			echo "Check your .env file for configured ports"; \
 		fi \
 	fi
+	@echo ""
 
 down: ## Stop development environment
 	docker compose down
@@ -54,6 +64,8 @@ logs-nginx: ## View nginx container logs
 install: ## Install PHP and Node dependencies
 	docker compose exec app composer install --ignore-platform-reqs
 	docker compose exec vite npm install
+	@echo "Fixing storage permissions..."
+	@$(MAKE) fix-permissions
 
 migrate: ## Run database migrations
 	docker compose exec app php artisan migrate
@@ -98,6 +110,12 @@ prod-down: ## Stop production environment
 
 status: ## Show container status
 	docker compose ps
+
+fix-permissions: ## Fix storage and cache permissions
+	@echo "Setting correct permissions for storage and bootstrap/cache..."
+	docker compose exec app chown -R www-data:www-data storage bootstrap/cache
+	docker compose exec app chmod -R 775 storage bootstrap/cache
+	@echo "Permissions fixed successfully!"
 
 clean: ## Remove all containers, volumes and images
 	docker compose down -v --rmi all

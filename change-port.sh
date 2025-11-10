@@ -59,8 +59,22 @@ if [ "$NEW_PORT" -eq "$CURRENT_PORT" ]; then
     exit 1
 fi
 
-# Calculate new Vite port (NEW_PORT + 1000)
-NEW_VITE_PORT=$((NEW_PORT + 1000))
+# Request new Vite port
+DEFAULT_NEW_VITE_PORT=$((NEW_PORT + 1000))
+read -p "Enter new Vite HMR port (default $DEFAULT_NEW_VITE_PORT): " NEW_VITE_PORT
+NEW_VITE_PORT=${NEW_VITE_PORT:-$DEFAULT_NEW_VITE_PORT}
+
+# Validate port is a number
+if ! [[ "$NEW_VITE_PORT" =~ ^[0-9]+$ ]]; then
+    echo "Error: Port must be a number"
+    exit 1
+fi
+
+# Validate port range
+if [ "$NEW_VITE_PORT" -lt 1024 ] || [ "$NEW_VITE_PORT" -gt 65535 ]; then
+    echo "Error: Port must be between 1024 and 65535"
+    exit 1
+fi
 
 # Request new MongoDB port
 echo ""

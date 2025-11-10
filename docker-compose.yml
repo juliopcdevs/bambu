@@ -60,7 +60,7 @@ services:
     working_dir: /var/www
     command: sh -c "npm install && npm run dev"
     ports:
-      - "${VITE_PORT:-5173}:5173"
+      - "${VITE_PORT:-5173}:${VITE_PORT:-5173}"
     volumes:
       - ./:/var/www
       - /var/www/node_modules
@@ -68,7 +68,7 @@ services:
       - bambu_network
     environment:
       - VITE_DEV_SERVER_HOST=0.0.0.0
-      - VITE_DEV_SERVER_PORT=5173
+      - VITE_PORT=${VITE_PORT:-5173}
 
 networks:
   bambu_network:
