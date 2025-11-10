@@ -43,13 +43,15 @@ make init
 This script will:
 - Ask for your project name
 - Ask for the application port (default: 8080)
+- Ask for the Vite HMR port (default: APP_PORT + 1000)
 - Ask for the MongoDB port (default: 27017)
+- **Automatically detect ports already in use** and suggest free alternatives
 - Update all configuration files
 - Configure Docker containers
 - Generate APP_KEY
 - Set up database names
 
-**Note**: Vite port is automatically calculated as APP_PORT + 1000
+**Note**: The script suggests APP_PORT + 1000 for Vite by default, but you can customize it
 
 ### 2. Build and Start Docker Containers
 
@@ -84,6 +86,8 @@ grep VITE_PORT .env
 grep DB_PORT .env
 ```
 
+**⚠️ IMPORTANT**: Make sure to access the correct port! If you have multiple projects running, each will have a different port. The `make up` command displays the correct URL for your application.
+
 ## Available Commands
 
 ```bash
@@ -95,8 +99,9 @@ make up                # Start containers
 make down              # Stop containers
 make restart           # Restart containers
 make shell             # Access PHP container shell
-make install           # Install dependencies
+make install           # Install dependencies (also fixes permissions)
 make migrate           # Run migrations
+make fix-permissions   # Fix storage and cache permissions
 make test              # Run backend tests
 make test-frontend     # Run frontend tests
 ```
@@ -127,6 +132,10 @@ The script ensures that multiple projects can run simultaneously without port co
 
 This boilerplate supports running multiple projects simultaneously on different ports:
 
+### Port Detection
+
+The initialization script (`make init`) automatically detects if ports are already in use and suggests free alternatives. This prevents conflicts when running multiple projects.
+
 ### Changing Ports
 
 If you need to run multiple projects at the same time, or if the default port is already in use:
@@ -138,26 +147,44 @@ make change-port
 This will:
 1. Show current port configuration (app, vite, and MongoDB)
 2. Ask for the new application port
-3. Ask for the new MongoDB port
-4. Stop running containers
-5. Update configuration files
-6. Ready to restart with new ports
+3. Ask for the new Vite HMR port
+4. Ask for the new MongoDB port
+5. Stop running containers
+6. Update configuration files
+7. Ready to restart with new ports
 
-Example workflow for running multiple projects:
+### Example Workflow
+
+Running multiple projects simultaneously:
 ```bash
-# Project 1 on port 8080, MongoDB on 27017
+# Project 1 on port 8080, Vite 9080, MongoDB 27017
 cd /path/to/project1
-make init  # Choose port 8080, MongoDB port 27017
+make init
+# → App port: 8080
+# → Vite port: 9080 (default 9080)
+# → MongoDB port: 27017
 make build && make up
+# Access: http://localhost:8080
 
-# Project 2 on port 8081, MongoDB on 27018
+# Project 2 on port 9090, Vite 10090, MongoDB 27019
 cd /path/to/project2
-make init  # Choose port 8081, MongoDB port 27018
+make init
+# → App port: 9090
+# → Vite port: 10090 (default 10090)
+# → MongoDB port: 27019
 make build && make up
+# Access: http://localhost:9090
 
 # Now both projects run simultaneously without port conflicts:
-# - Project 1: http://localhost:8080 (MongoDB: 27017)
-# - Project 2: http://localhost:8081 (MongoDB: 27018)
+# - Project 1: App 8080, Vite 9080, MongoDB 27017
+# - Project 2: App 9090, Vite 10090, MongoDB 27019
+```
+
+### ⚠️ Common Issue: Wrong Port
+
+If you see content from another project, you're likely accessing the wrong port. Always check the output of `make up` to see the correct URL, or run:
+```bash
+grep APP_PORT .env
 ```
 
 ## Project Structure

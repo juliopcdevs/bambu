@@ -23,10 +23,48 @@ fi
 # Convert to snake_case for container and database names
 PROJECT_SNAKE=$(echo "$PROJECT_NAME" | sed 's/\([A-Z]\)/_\1/g' | sed 's/^_//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr '-' '_')
 
+# Function to check if port is in use
+check_port() {
+    local port=$1
+    if command -v lsof &> /dev/null; then
+        lsof -i ":$port" > /dev/null 2>&1
+        return $?
+    elif command -v netstat &> /dev/null; then
+        netstat -tuln | grep ":$port " > /dev/null 2>&1
+        return $?
+    else
+        # If neither command is available, assume port is free
+        return 1
+    fi
+}
+
+# Function to suggest next free port
+suggest_free_port() {
+    local start_port=$1
+    local test_port=$start_port
+    while [ $test_port -le 65535 ]; do
+        if ! check_port $test_port; then
+            echo $test_port
+            return
+        fi
+        test_port=$((test_port + 1))
+    done
+    echo $start_port
+}
+
 # Request application port
 echo ""
-read -p "Enter web application port (default 8080): " APP_PORT
-APP_PORT=${APP_PORT:-8080}
+DEFAULT_APP_PORT=8080
+if check_port $DEFAULT_APP_PORT; then
+    SUGGESTED_PORT=$(suggest_free_port 8081)
+    echo "⚠️  Warning: Port $DEFAULT_APP_PORT is already in use!"
+    echo "Suggested free port: $SUGGESTED_PORT"
+    read -p "Enter web application port (default $SUGGESTED_PORT): " APP_PORT
+    APP_PORT=${APP_PORT:-$SUGGESTED_PORT}
+else
+    read -p "Enter web application port (default $DEFAULT_APP_PORT): " APP_PORT
+    APP_PORT=${APP_PORT:-$DEFAULT_APP_PORT}
+fi
 
 # Validate port is a number
 if ! [[ "$APP_PORT" =~ ^[0-9]+$ ]]; then
@@ -40,13 +78,67 @@ if [ "$APP_PORT" -lt 1024 ] || [ "$APP_PORT" -gt 65535 ]; then
     exit 1
 fi
 
-# Calculate Vite port (APP_PORT + 1000)
-VITE_PORT=$((APP_PORT + 1000))
+# Check if selected port is in use
+if check_port $APP_PORT; then
+    echo "⚠️  Warning: Port $APP_PORT is already in use by another process!"
+    echo "You may encounter conflicts. Consider using a different port."
+    read -p "Continue anyway? (y/N): " continue_anyway
+    if [[ ! "$continue_anyway" =~ ^[Yy]$ ]]; then
+        echo "Initialization cancelled."
+        exit 1
+    fi
+fi
+
+# Request Vite port
+echo ""
+DEFAULT_VITE_PORT=$((APP_PORT + 1000))
+if check_port $DEFAULT_VITE_PORT; then
+    SUGGESTED_VITE_PORT=$(suggest_free_port $((APP_PORT + 1000)))
+    echo "⚠️  Warning: Calculated Vite port $DEFAULT_VITE_PORT is already in use!"
+    echo "Suggested free port: $SUGGESTED_VITE_PORT"
+    read -p "Enter Vite HMR port (default $SUGGESTED_VITE_PORT): " VITE_PORT
+    VITE_PORT=${VITE_PORT:-$SUGGESTED_VITE_PORT}
+else
+    read -p "Enter Vite HMR port (default $DEFAULT_VITE_PORT): " VITE_PORT
+    VITE_PORT=${VITE_PORT:-$DEFAULT_VITE_PORT}
+fi
+
+# Validate port is a number
+if ! [[ "$VITE_PORT" =~ ^[0-9]+$ ]]; then
+    echo "Error: Port must be a number"
+    exit 1
+fi
+
+# Validate port range
+if [ "$VITE_PORT" -lt 1024 ] || [ "$VITE_PORT" -gt 65535 ]; then
+    echo "Error: Port must be between 1024 and 65535"
+    exit 1
+fi
+
+# Check if selected Vite port is in use
+if check_port $VITE_PORT; then
+    echo "⚠️  Warning: Port $VITE_PORT is already in use by another process!"
+    echo "You may encounter conflicts. Consider using a different port."
+    read -p "Continue anyway? (y/N): " continue_vite
+    if [[ ! "$continue_vite" =~ ^[Yy]$ ]]; then
+        echo "Initialization cancelled."
+        exit 1
+    fi
+fi
 
 # Request MongoDB port
 echo ""
-read -p "Enter MongoDB port (default 27017): " DB_PORT
-DB_PORT=${DB_PORT:-27017}
+DEFAULT_DB_PORT=27017
+if check_port $DEFAULT_DB_PORT; then
+    SUGGESTED_DB_PORT=$(suggest_free_port 27018)
+    echo "⚠️  Warning: MongoDB port $DEFAULT_DB_PORT is already in use!"
+    echo "Suggested free port: $SUGGESTED_DB_PORT"
+    read -p "Enter MongoDB port (default $SUGGESTED_DB_PORT): " DB_PORT
+    DB_PORT=${DB_PORT:-$SUGGESTED_DB_PORT}
+else
+    read -p "Enter MongoDB port (default $DEFAULT_DB_PORT): " DB_PORT
+    DB_PORT=${DB_PORT:-$DEFAULT_DB_PORT}
+fi
 
 # Validate port is a number
 if ! [[ "$DB_PORT" =~ ^[0-9]+$ ]]; then
@@ -58,6 +150,17 @@ fi
 if [ "$DB_PORT" -lt 1024 ] || [ "$DB_PORT" -gt 65535 ]; then
     echo "Error: Port must be between 1024 and 65535"
     exit 1
+fi
+
+# Check if selected MongoDB port is in use
+if check_port $DB_PORT; then
+    echo "⚠️  Warning: Port $DB_PORT is already in use by another process!"
+    echo "You may encounter conflicts. Consider using a different port."
+    read -p "Continue anyway? (y/N): " continue_db
+    if [[ ! "$continue_db" =~ ^[Yy]$ ]]; then
+        echo "Initialization cancelled."
+        exit 1
+    fi
 fi
 
 echo ""
@@ -147,27 +250,38 @@ echo ""
 echo "Project name: $PROJECT_NAME"
 echo "Technical name: $PROJECT_SNAKE"
 echo "Database: $PROJECT_SNAKE"
-echo "Application port: $APP_PORT"
-echo "Vite port: $VITE_PORT"
-echo "MongoDB port: $DB_PORT"
+echo ""
+echo "Ports Configuration:"
+echo "-------------------"
+echo "• Application:  http://localhost:$APP_PORT"
+echo "• Vite HMR:     http://localhost:$VITE_PORT"
+echo "• MongoDB:      mongodb://localhost:$DB_PORT"
+echo ""
 echo "Containers: ${PROJECT_SNAKE}_app, ${PROJECT_SNAKE}_nginx, ${PROJECT_SNAKE}_mongodb, ${PROJECT_SNAKE}_vite"
 echo ""
-echo "Next steps:"
-echo "==========="
+echo "=========================================="
+echo "  Next steps:"
+echo "=========================================="
 echo ""
 echo "1. Build and start Docker containers:"
 echo "   make build && make up"
 echo ""
-echo "2. Install dependencies (inside container):"
-echo "   make shell"
-echo "   composer install --ignore-platform-reqs"
-echo "   exit"
+echo "2. Install dependencies (will also fix permissions):"
+echo "   make install"
 echo ""
 echo "3. Run migrations:"
 echo "   make migrate"
 echo ""
-echo "4. Access the application:"
-echo "   http://localhost:$APP_PORT"
+echo "4. Access the application at:"
+echo "   ⭐ http://localhost:$APP_PORT ⭐"
+echo ""
+echo "⚠️  IMPORTANT: Make sure to access the correct port!"
+echo "   Your application is on port $APP_PORT"
+if check_port 8080 && [ "$APP_PORT" != "8080" ]; then
+    echo "   (Note: Port 8080 has a different application)"
+fi
+echo ""
+echo "Note: If you encounter permission issues, run: make fix-permissions"
 echo ""
 echo "See more available commands with: make help"
 echo ""

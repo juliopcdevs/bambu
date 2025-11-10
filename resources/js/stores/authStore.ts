@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import axios from '@/bootstrap';
+import axios from 'axios';
 import type { User, LoginCredentials, AuthResponse } from '@types/auth';
 
 export const useAuthStore = defineStore('auth', () => {
